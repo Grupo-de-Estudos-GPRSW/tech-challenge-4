@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel>=0.45,<1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tech-challenge-4-g95"
+version = "1.0.0"
+description = "Protótipo acadêmico de análise de áudio e texto de consultas"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "scipy>=1.14,<2",
+  "numpy>=2.0,<3", "pandas>=2.2,<3", "pydantic>=2.10,<3",
+  "streamlit>=1.45,<2", "plotly>=6,<7", "python-dotenv>=1,<2",
+  "openai>=2,<3", "soundfile>=0.13,<0.14",
+]
+
+[project.optional-dependencies]
+ml = [
+  "torch>=2.8,<3", "torchaudio>=2.8,<3", "librosa>=0.11,<0.12",
+  "openai-whisper>=20240930", "transformers>=4.50,<5",
+  "huggingface-hub>=0.34,<1", "safetensors>=0.5.2,<1",
+]
+diarization = ["pyannote.audio>=4,<5"]
+dev = ["pytest>=8,<10", "pytest-cov>=6,<8", "ruff>=0.11,<1", "build>=1,<2", "setuptools>=77.0.3", "wheel>=0.45,<1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --cov=clinical_audio --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
+
+[tool.coverage.run]
+omit = ["*/clinical_audio/__init__.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]

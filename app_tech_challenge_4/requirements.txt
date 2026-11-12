@@ -1,0 +1,39 @@
+# Instalação completa: interface, análise de áudio/texto, diarização e desenvolvimento.
+# Execute na raiz do projeto: python -m pip install -r requirements.txt
+# As faixas abaixo correspondem às dependências declaradas em pyproject.toml.
+# Dependências transitivas são resolvidas automaticamente pelo pip.
+
+# Interface, configuração, leitura WAV/FLAC e análise textual
+numpy>=2.0,<3
+scipy>=1.14,<2
+pandas>=2.2,<3
+pydantic>=2.10,<3
+streamlit>=1.45,<2
+plotly>=6,<7
+python-dotenv>=1,<2
+openai>=2,<3
+soundfile>=0.13,<0.14
+
+# Modelos locais: transcrição, eventos acústicos, emoções e prosódia
+torch>=2.8,<3
+torchaudio>=2.8,<3
+librosa>=0.11,<0.12
+openai-whisper>=20240930
+transformers>=4.50,<5
+# Download e carregamento dos pesos dos modelos
+huggingface-hub>=0.34,<1
+safetensors>=0.5.2,<1
+
+# Separação de falantes (uso requer HF_TOKEN e aceite dos termos do modelo)
+pyannote.audio>=4,<5
+
+# Testes, cobertura, lint e empacotamento
+pytest>=8,<10
+pytest-cov>=6,<8
+ruff>=0.11,<1
+build>=1,<2
+setuptools>=77.0.3
+wheel>=0.45,<1
+
+# Registra o pacote local clinical_audio em modo editável
+-e .
