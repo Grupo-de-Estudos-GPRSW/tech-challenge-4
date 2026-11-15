@@ -10,6 +10,17 @@ transcrever a conversa, selecionar as falas do paciente e comparar as emoções 
 pela voz e pelo conteúdo textual. O resultado é apresentado em tabelas e em um relatório
 Markdown, acompanhado de um CSV com os segmentos analisados.
 
+## Dataset de Áudio Selecionado (Consulta Médica)
+
+Para atender aos requisitos de diálogo de consulta médica e de manifestações patológicas da fala humana real, sem recorrer a síntese de voz, utilizamos o **MeDial-Speech (anamnese clínica)**.
+
+- **Nome do Dataset e Instituição Responsável:**
+  **Componente A (Consulta Médica / Anamnese):** MeDial-Speech Dataset, mantido no repositório Hugging Face Datasets (`hcuayahu/MeDial-Speech`) por pesquisadores em IA biomédica.
+- **Link Oficial do Repositório / Download Direto:**
+  **MeDial-Speech:** [Repositório Hugging Face](https://huggingface.co/datasets/hcuayahu/MeDial-Speech) (Licença CC BY-NC 4.0, acesso público e imediato).
+- **Conteúdo Específico da Fala (anamnese, termos médicos ditos, sintomas presentes como fadiga ou disartria):**
+  **Consultas e Anamneses (MeDial-Speech):** Gravações em áudio humano real no formato `.wav` contendo diálogos entre médicos e pacientes. Os diálogos abrangem a coleta de dados demográficos, relatos de queixas principais (dificuldade de concentração, insônia, fadiga diurna, desmaios/síncopes, quedas frequentes e tremores finos em mãos), histórico patológico egresso (Ataque Isquêmico Transitório — AIT / TIA e hipertensão), hábitos de vida (consumo de álcool), antecedentes familiares (doença de Alzheimer) e revisão farmacológica (prescrição de Clopidogrel 75mg e Anlodipino 5mg).
+  
 ## Etapas e modelos
 
 | Etapa | Implementação |
