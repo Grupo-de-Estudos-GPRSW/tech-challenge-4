@@ -27,6 +27,64 @@ Markdown, acompanhado de um CSV com os segmentos analisados.
 AST, Whisper e diarização processam o áudio completo. A análise vocal e textual é feita
 somente sobre os segmentos atribuídos automaticamente ao paciente.
 
+## Arquitetura do notebook
+
+O notebook utiliza execução sequencial em uma sessão Python do Google Colab. As primeiras
+células instalam dependências, obtêm credenciais e carregam os modelos; as seguintes definem
+as funções de análise. A última célula coordena o processamento e grava os resultados.
+Modelos, cliente OpenAI e configurações permanecem em variáveis da sessão.
+
+```mermaid
+flowchart TD
+    SETUP[Instalações, Colab Secrets e carregamento dos modelos]
+    SETUP --> INPUT[Arquivo de áudio indicado por AUDIO_PATH]
+    INPUT --> AST[AST: eventos acústicos no áudio completo]
+    AST --> WHISPER[Whisper: transcrição segmentada]
+    WHISPER --> DIAR[Community-1: turnos de fala]
+    DIAR --> FILTER[Identificação automática e filtro do paciente]
+    FILTER --> VOICE[SER e prosódia das falas selecionadas]
+    AST -. Eventos próximos às falas .-> VOICE
+    VOICE --> CLIENT{Cliente OpenAI disponível?}
+    CLIENT -->|Sim: IDs e transcrições| API[API OpenAI: emoção textual estruturada]
+    CLIENT -->|Não| NEUTRAL[Emoção textual Neutro por fallback]
+    API --> JOIN[Junção por segment_id]
+    NEUTRAL --> JOIN
+    VOICE -. Emoções vocais e eventos .-> JOIN
+    JOIN --> RULES[Regras locais de discordância]
+    RULES --> DF[DataFrame consolidado do paciente]
+    DF --> REPORT[Relatório programático]
+    AST -. Tabela de eventos do áudio completo .-> REPORT
+    REPORT --> MD[Arquivo Markdown e exibição no Colab]
+    REPORT --> CSV[Arquivo CSV dos segmentos analisados]
+```
+
+As setas contínuas indicam a sequência principal; as pontilhadas mostram dados aproveitados
+em etapas posteriores. O áudio é lido a partir do caminho informado nas funções que precisam
+dele. AST e análise vocal usam `librosa` para leitura em mono a 16 kHz; Whisper e diarização
+recebem o caminho do arquivo. O processamento usa CPU ou GPU conforme a disponibilidade de CUDA.
+
+| Componente | Função ou objeto | Responsabilidade |
+|---|---|---|
+| Configuração e credenciais | `userdata`, `DEVICE`, `TORCH_DEVICE`, `SAMPLE_RATE`, `client` | Obter os segredos do Colab e configurar a execução |
+| Detecção de eventos | `ast_classifier`, `detect_clinical_non_verbal_sounds` | Percorrer janelas do áudio e consolidar eventos acústicos |
+| Transcrição | `whisper_model`, `transcribe_clinical_audio` | Gerar IDs, tempos e texto dos segmentos |
+| Diarização | `diarization_pipeline`, `run_real_diarization` | Obter os turnos e os identificadores de falantes no áudio completo |
+| Seleção do paciente | `get_patient_speaker_id_acoustically`, `filter_patient_segments` | Inferir o papel do falante e selecionar os segmentos por sobreposição temporal |
+| Voz e prosódia | `ser_pipeline`, `analyze_voice_emotions`, `extract_prosodic_features` | Classificar emoções vocais, calcular pitch/RMS e associar eventos próximos |
+| Contrato textual | `SegmentTextEmotion`, `ConsultationTextEmotions` | Definir a resposta estruturada esperada da análise textual |
+| Análise textual | `analyze_text_emotion_with_openai` | Enviar apenas IDs e transcrições ou atribuir Neutro sem cliente |
+| Fusão e regras | `run_text_and_discordance_analysis`, `calculate_discordance_locally` | Juntar emoções por ID e calcular níveis e explicações localmente |
+| Exportação | `generate_clinical_discordance_report` | Gerar Markdown e CSV a partir das tabelas calculadas |
+
+O Hugging Face fornece os modelos de áudio, cuja inferência ocorre no ambiente do Colab.
+A chamada OpenAI é a etapa remota de análise textual: não recebe o áudio, os scores vocais
+ou os eventos detectados. O relatório é montado por código Python, sem geração de texto por LLM.
+
+Os dados intermediários ficam em listas e DataFrames na memória da sessão. Os resultados
+finais são gravados no sistema de arquivos do ambiente; não há banco de dados, servidor de
+aplicação ou fila de processamento. A conclusão do fluxo depende das etapas anteriores:
+erros de leitura, diarização, modelos ou chamadas à API podem interromper a execução.
+
 ## Pré-requisitos
 
 - Conta Google com acesso ao Colab e conexão à internet para instalar bibliotecas e baixar modelos.
@@ -152,3 +210,22 @@ As emoções e discordâncias são estimativas experimentais. Scores não repres
 clínica, e as regras não comprovam diagnóstico, estado emocional ou ocultação de sintomas.
 Utilize gravações autorizadas: a etapa OpenAI envia a transcrição do paciente a um serviço
 externo. Revise transcrições, saídas salvas e credenciais antes de compartilhar o notebook.
+
+
+## Autor
+
+### Grupo 95:
+```bash
+Gabriel Paoliello RM370704 - ga.paoliello@gmail.com
+Pedro Rogala RM372338 - pedrorogala@gmail.com
+Sandro Felipe RM372111 - kleyguerth@gmail.com
+Rafaella Reis RM373710 - rafaelareis20@gmail.com
+Wisley Siqueira RM374052 - dev.wisleysiqueira@gmail.com
+```
+
+Turma: 9IADT
+
+Curso: PosTech - Inteligência Artificial para Devs
+
+Instituição: FIAP
+

@@ -34,6 +34,64 @@ identificar médico/robô e escolher outro falante como paciente. Sem correspond
 com menor duração acumulada; sem turnos, o ID padrão é `SPEAKER_01`. Essa inferência não garante o
 papel real. O aplicativo mostra o ID escolhido; não permite trocar por seleção manual de paciente.
 
+## Arquitetura do projeto
+
+A aplicação organiza interface, processamento e integrações em módulos Python. O Streamlit
+recebe o arquivo e apresenta os resultados; `AnalysisPipeline` coordena a análise por meio de
+adaptadores de áudio e texto, que podem ser substituídos nos testes.
+
+```mermaid
+flowchart TD
+    U[Usuário] --> UI[Streamlit: upload WAV ou FLAC]
+    UI --> AUDIO[Validação e conversão: mono a 16 kHz]
+    AUDIO --> AST[AST: eventos no áudio completo]
+    AST --> W[Whisper: transcrição segmentada]
+    W --> D[Community-1: diarização]
+    D --> P[Seleção automática e filtro do paciente]
+    P --> V[SER e prosódia das falas do paciente]
+    V --> C{Análise textual habilitada?}
+    C -->|Sim: somente IDs e transcrições| O[API OpenAI: emoção textual]
+    C -->|Não| N[Emoção textual Neutro por fallback]
+    O --> R[Regras locais de discordância]
+    N --> R
+    R --> RESULT[Resultado estruturado: AnalysisResult]
+    RESULT --> VIEW[Tabelas, métricas e linha do tempo]
+    RESULT --> EXPORT[Downloads: Markdown, CSV e JSON]
+    VIEW --> UI
+    EXPORT --> UI
+```
+
+As etapas do processamento real são sequenciais. Os eventos são detectados no áudio completo
+e associados às falas por proximidade temporal; voz e texto são analisados apenas para o
+paciente selecionado. A diarização é obrigatória. A OpenAI classifica a emoção textual;
+o cálculo das discordâncias e a montagem dos relatórios são executados localmente.
+
+| Componente | Responsabilidade |
+|---|---|
+| `app.py` | Interface Streamlit, autorização do upload, configuração da análise, visualização e downloads |
+| `audio.py` | Validação de formato, tamanho e duração; leitura com SoundFile, conversão para mono e reamostragem |
+| `pipeline.py` | Orquestração das etapas, filtragem do paciente e construção de `AnalysisResult` |
+| `backends.py` | Adaptador `LocalModels`: AST, Whisper, Community-1, SER e extração de prosódia |
+| `semantic.py` | Adaptador `OpenAISemantic`: envio de IDs/transcrições e leitura da resposta estruturada |
+| `models.py` | Contratos Pydantic para segmentos, turnos, eventos, emoções e resultados |
+| `rules.py` e módulo de análise clínica | Heurísticas de seleção, associação de eventos, comparação de emoções e menções por palavras-chave |
+| `reports.py` | Preparação de tabelas e exportações Markdown, CSV e JSON |
+| `config.py`, `dependencies.py` e `errors.py` | Configurações, diagnóstico de dependências e mensagens de erro por etapa |
+| `demo.py` | Dados fictícios para explorar a interface sem carregar modelos ou chamar APIs |
+| `verification.py`, `tests/` e `scripts/` | Critérios de auditoria, testes automatizados e verificações explícitas de inferência real |
+
+Os módulos de serviço ficam em `src/clinical_audio/`. Os modelos locais são carregados sob
+demanda e reutilizados em cache; cada pipeline compartilhado possui um lock para serializar
+as análises. Uploads e resultados permanecem na memória da sessão. Alterar o arquivo, idioma,
+modelo Whisper ou opção OpenAI invalida o resultado anterior.
+
+O Hugging Face fornece acesso e download de modelos; a inferência de áudio ocorre no ambiente
+da aplicação, em CPU ou GPU. Quando habilitada, a integração OpenAI envia somente IDs e
+transcrições. A arquitetura atual não utiliza banco de dados nem fila de processamento.
+Falhas de modelos ou da API ativa interrompem a análise e são apresentadas na interface.
+
+Consulte [a documentação de arquitetura](docs/arquitetura.md) para detalhes adicionais.
+
 ## Instalação e execução
 
 Use preferencialmente Python 3.11 para a pilha de IA. O pacote declara Python 3.11–3.13;
@@ -186,3 +244,22 @@ docker run --rm -p 127.0.0.1:8501:8501 --env-file .env g95:ml
 
 A imagem leve executa a demonstração. A variante ML inclui os modelos/diarização como dependências;
 pesos ainda precisam ser baixados. O container roda sem privilégios e inclui libsndfile.
+
+
+
+## Autor
+
+### Grupo 95:
+```bash
+Gabriel Paoliello RM370704 - ga.paoliello@gmail.com
+Pedro Rogala RM372338 - pedrorogala@gmail.com
+Sandro Felipe RM372111 - kleyguerth@gmail.com
+Rafaella Reis RM373710 - rafaelareis20@gmail.com
+Wisley Siqueira RM374052 - dev.wisleysiqueira@gmail.com
+```
+
+Turma: 9IADT
+
+Curso: PosTech - Inteligência Artificial para Devs
+
+Instituição: FIAP
